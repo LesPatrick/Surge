@@ -90,6 +90,7 @@ _The infrastructure and best practices for distributing Swift libraries are curr
 ### FFT
 
 - `fft`
+- `real-to-real dft`
 
 ### Hyperbolic
 
