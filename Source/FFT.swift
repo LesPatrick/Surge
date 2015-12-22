@@ -65,3 +65,44 @@ public func fft(input: [Double]) -> [Double] {
 
     return normalizedMagnitudes
 }
+
+// MARK: Discrete Fourier Transform
+
+public func dft(input: [Double]) -> (real:[Double], imag: [Double], magnitudes: [Double]) {
+    let log2n = vDSP_Length(floor(log2(Double(input.count))))
+    var realIn = [Double](count: input.count/2, repeatedValue: 0.0)
+    var imagIn = [Double](count: input.count/2, repeatedValue: 0.0)
+    var realOut = [Double](count: input.count, repeatedValue: 0.0)
+    var imagOut = [Double](count: input.count, repeatedValue: 0.0)
+    var magnitudes = [Double](count: input.count, repeatedValue: 0.0)
+    var inComplex = DSPDoubleSplitComplex(realp: &realIn, imagp: &imagIn)
+    var splitComplex = DSPDoubleSplitComplex(realp: &realOut, imagp: &imagOut)
+    
+    for (var i = 0; i < input.count; i+=2) {
+        inComplex.realp[i/2] = input[i]
+        inComplex.imagp[i/2] = input[i+1]
+    }
+    
+    let setup = vDSP_create_fftsetupD(log2n, FFTRadix(kFFTRadix2))
+    
+    vDSP_fft_zripD(setup, &inComplex, 1, log2n, FFTDirection(kFFTDirection_Forward))
+    
+    for (var i = 0; i < input.count/2; i++) {
+        inComplex.realp[i] *= 0.5
+        inComplex.imagp[i] *= 0.5
+    }
+    
+    splitComplex.realp[0] = inComplex.realp[0]
+    for (var i = 1; i < input.count/2; i++) {
+        splitComplex.realp[i] = inComplex.realp[i]
+        splitComplex.realp[input.count - i] = inComplex.realp[i]
+        splitComplex.imagp[i] = inComplex.imagp[i]
+        splitComplex.imagp[input.count - i] = inComplex.imagp[i]
+    }
+    splitComplex.realp[input.count/2] = inComplex.imagp[0]
+    
+    magnitudes = sqrt(add(mul(realOut, realOut), mul(imagOut, imagOut)))
+    
+    return (real: realOut, imag: imagOut, magnitudes: magnitudes)
+}
+
